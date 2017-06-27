@@ -1,129 +1,121 @@
-##################################
-#     SMDE - Queueing Theory     #
-#        Evaluating G/G/1        #
-#   Eloy Gil - eloy@ac.upc.edu   #
-##################################
+##########################################
+#         SMDE - Queueing Theory         #
+#            Evaluating G/G/1            #
+#   Albert Cerezo - acerezo@ac.upc.edu   #
+#       Eloy Gil - eloy@ac.upc.edu       #
+##########################################
 
-simulation <- function(number_seed, a, b) {
-  
-  set.seed(number_seed)
-  L = W = Lq = Wq = t = 0
+## Effects of service times following a long-tailed distribution.
+
+a = 0.6135
+b = 4
+
+# Euler 
+euler1 = gamma((a+1)/a)
+euler2 = gamma((a+2)/a)
+
+Ex = b*euler1                     # Mean (E[x])
+VarX = b^2*(euler2 - euler1^2)    # Variance (Var[x])
+stdVarX = sqrt(VarX)              # std. dev.
+Cx = stdVarX / Ex                 # Coefficient of variation (C[x])
+
+
+## The effect of long tailed service times on G/G/1.
+
+# Using the assigned Erlang Distribution
+k = 4 
+e_stage = 19.75
+e_tau = 79
+mean_erlang = e_tau               # E[x] = k * e_stage
+var_erlang = k / ((1/e_stage)^2)  # Var[x], sigma^2 (arrivals)
+std_var_erlang = sqrt(var_erlang) # stdVar[x], sigma (arrival)
+lambda = 1 / mean_erlang          # lambda
+
+# Value of a & b for each Traffic Factor
+tf <-  c(0.4, 0.7, 0.85, 0.925)
+for (p in tf) {
+  b = (p*mean_erlang) / euler1  # b (scale)
+  mhu = 1/(b*euler1)            # mhu 
+  theta = lambda / mhu          # theta 
+  C = theta                     # C(s, theta)
+  var_weibull = b^2*(euler2 - euler1^2)  # Var[x], sigma^2 (service)
+  # Lq 
+  Lq_m = C*p / (1-p)            
+  Lq = Lq_m * ((lambda^2 * var_erlang + mhu^2 * var_weibull))/2
+  # E[x] = Wq, average waiting time
+  Wq = (C * (lambda^2 * var_erlang + mhu^2 * var_weibull)) / (2 * mhu * (1-p))  
+  print(paste("Traffic Factor", p, " b = ", b, " Wq: ", Wq))
+}
+
+simulate <- function(seed, a, b, k, e_st, N) {
+  L = Lq = W = Wq = t = 0
+  LTi = ti = NULL
   theta = -Inf
-  
-  n = 100000
-  weibull_numbers = rweibull(100000, a, b)
-  erlang_numbers= rgamma(100000, 4, 1/19.75)
-  
-  LTi = NULL 
-  ti = NULL
-  
-  for (i in 1:n) {
+  WeibullNum = rweibull(N, a, b)
+  erlangNum = rgamma(N, k, 1/e_st)
+  set.seed(seed)
+
+  for (i in 1:N) {
+    ts = max(theta, t)    # 1
+    x_i = WeibullNum[i]   # 2
+    theta = ts + x_i      # 3
+
+    wi = li = theta - t   # 5a
+    L = L + li            #
+    Lt = L / t
     
-    # [1]
-    ts = max(theta, t)
+    LTi <- c(LTi, Lt)     # Saving to 
+    ti <- c(ti, t)        # plot later
     
-    # [2] Generate x_1 from the specified distribution
-    xi = weibull_numbers[i]
+    W = W + wi
     
-    # [3] 
-    theta = ts + xi
+    lqi = wqi = ts - t    # 5b
+    Lq = Lq + lqi         # 
+    Wq = Wq + wqi         #
     
-    
-    # [5][a]
-    wi = li = theta - t 
-    L = L + li 
-    
-    Lt = L / (t)
-    
-    # Save data for graphic part 
-    LTi <- c(LTi,Lt)
-    ti <- c(ti, t)
-    
-    W = W + wi 
-    
-    # [5][b]
-    lqi = wqi = ts - t 
-    Lq = Lq + lqi
-    Wq = Wq + wqi
-    
-    # [4]
-    if (i < n) {
-      tau = erlang_numbers[i] 
-      t = t + tau    
-      
-    } 
+    if (i < N) {          # 4
+      tau = erlangNum[i]  #
+      t = t + tau         #
+    }                     #
   }
   
-  # Printing Statistics 
-  W = W/n 
-  Wq = Wq/n
-  #print (paste("Value of W:  " , W))
-  #print (paste("Value of Wq:  ", Wq))
-  
-  L = L / (t)
-  Lq = Lq / (t)
-  #print (paste("Value of L:  " , L))
-  #print (paste("Value of Lq:  ", Lq))
-  
-  
-  
-  # Print data LTi vs. i time 
-  heading = " LT versus time "
-  ti
-  LTi
-  plot(ti, LTi, type="n", main=heading) 
-  
-  returnlist = list(W, Wq, L, Lq, LTi, ti)
+  W = W / N
+  Wq = Wq / N
+  L = L / t
+  Lq = Lq / t
+  plot(ti, LTi, type="l", main="LT versus time", col="blue")    # Plot data LTi vs. i time
+  returnlist = list(W, Wq, L, Lq, LTi, ti)                      # Return results
 }
 
+# Initialization 
+W_v = Wq_v = L_v = Lq_v = NULL
+seed = 157      # Starting seed
+N = 100000      # Number of clients
+NumTests = 10   # Number of simulations per scale
+k = 4           # K
+e_st = 19.75    # E(stage)
+a = 0.6135      # Shape
+b_list = c(21.6068526614056, 37.8119921574598, 45.9145619054869, 49.9658467795004)
+b = b_list[4]   # Scale (b factor) obtained using our scr
 
-
-############ 
-#   MAIN  #  
-############
-W_values = NULL
-Wq_values = NULL
-L_values = NULL
-Lq_values = NULL
-
-# Shape, value obtained from assigment list  
-a = 0.3135
-
-# Scale,  values obtained at long-tailed-distribution.R script
-#b_values <-  c(5.7291727528036, 10.0260523174063, 12.1744920997076, 13.2487119908583)
-b_values <-  c(9.54771579960225)
-for (b in b_values ) {
-  
-  print (paste("Execution using b = ", b))
-  
-  for (j in 1:10) {
-    # print (paste("Simulation ", j))
-    number_seed = 692*j
-    list_ret = simulation(number_seed, a, b)
-    
-    W = list_ret[[1]]
-    Wq = list_ret[[2]]
-    L = list_ret[[3]]
-    Lq = list_ret[[4]]
-    LTi = list_ret[[5]]
-    LTi 
-    ti = list_ret[[6]]
-    
-    ti
-    W_values <- c(W_values, W)
-    Wq_values <- c(Wq_values, Wq)
-    L_values <- c(L_values, L)
-    Lq_values <- c(Lq_values, Lq)
-    
-    # print ("-------------------")
-  }
-  
-  # Confidence Interval for Lq and Wq
-  mean_wq = mean(Wq_values)
-  mean_lq = mean(Lq_values)
-  print (paste("W Mean ", mean(W_values)))   # Temps mitjana del sistema  -> 11759 (segons)
-  print (paste("Wq Mean ", mean(Wq_values))) # Temps mitjana de cua       -> 11687 (segons)
-  print (paste("L Mean ", mean(L_values)))   # Ocupacio mitjana del sistema -> 148.69 (clients)
-  print (paste("Lq Mean ", mean(Lq_values))) # Ocupacio mitjana de la cua  -> 147.77 (clients)
-  print ("+++++++++++++++++++++")
+print(paste("Simulation with b = ", b))
+for (j in 1:NumTests) {
+  seed = seed + j                             # Refreshing seed value
+  result = simulate(seed, a, b, k, e_st, N)   # Starting simulation
+  W = result[[1]]                             # Extracting simulation results
+  Wq = result[[2]]
+  L = result[[3]]
+  Lq = result[[4]]
+  LTi = result[[5]]
+  ti = result[[6]]
+  W_v = c(W_v, W)
+  Wq_v = c(Wq_v, Wq)
+  L_v = c(L_v, L)
+  Lq_v = c(Lq_v, Lq)
 }
+
+# Printing simulation results
+print(paste("W mean: ", mean(W_v), "| Std dev.: ", sd(W_v)))    # Avg time in the system and its std. dev.
+print(paste("Wq mean: ", mean(Wq_v), "| Std dev.: ", sd(Wq_v))) # Avg time in the queue and its std. dev.
+print(paste("L mean: ", mean(L_v), "| Std dev.: ", sd(L_v)))    # Avg system occupation and its std. dev.
+print(paste("Lq mean: ", mean(Lq_v), "| Std dev.: ", sd(Lq_v))) # Avg queue occupation and its std. dev.
