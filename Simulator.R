@@ -32,6 +32,7 @@ std_var_erlang = sqrt(var_erlang) # stdVar[x], sigma (arrival)
 lambda = 1 / mean_erlang          # lambda
 
 # Value of a & b for each Traffic Factor
+b_list = NULL
 tf <-  c(0.4, 0.7, 0.85, 0.925)
 for (p in tf) {
   b = (p*mean_erlang) / euler1  # b (scale)
@@ -45,6 +46,7 @@ for (p in tf) {
   # E[x] = Wq, average waiting time
   Wq = (C * (lambda^2 * var_erlang + mhu^2 * var_weibull)) / (2 * mhu * (1-p))  
   print(paste("Traffic Factor", p, " b = ", b, " Wq: ", Wq))
+  b_list <- c(b_list, b)  # Saving b list to use it later
 }
 
 simulate <- function(seed, a, b, k, e_st, N) {
@@ -95,8 +97,8 @@ NumTests = 10   # Number of simulations per scale
 k = 4           # K
 e_st = 19.75    # E(stage)
 a = 0.6135      # Shape
-b_list = c(21.6068526614056, 37.8119921574598, 45.9145619054869, 49.9658467795004)
-b = b_list[4]   # Scale (b factor) obtained using our scr
+# b_list = c(21.6068526614056, 37.8119921574598, 45.9145619054869, 49.9658467795004) # Saved in line 49
+b = b_list[4]   # Scale (b factor) to simulate [1-4]
 
 print(paste("Simulation with b = ", b))
 for (j in 1:NumTests) {

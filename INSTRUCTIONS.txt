@@ -1,0 +1,27 @@
+##########################################
+#         SMDE - Queueing Theory         #
+#              Instructions              #
+#   Albert Cerezo - acerezo@ac.upc.edu   #
+#       Eloy Gil - eloy@ac.upc.edu       #
+##########################################
+
+The file Report.pdf has a summary of our experiments during this assignment.
+
+Our script Simulator.R has all we need: The first part is meant to be used to check 
+the effects of service times following a long-tailed distribution. It is easy to use
+those lines to calculate the mean, variance, standard deviation and the coefficient 
+of variation.
+
+It is possible to check the effect of long tailed service times on G/G/1, using the
+assigned distribution and parameters prints the traffic factor and scale variable b. 
+This is used to compare the theoretical values with the simulation performed with
+the Java simulator available in the Raco and also stores the b values to run our own
+simulation.
+
+The last part of the script runs a proper simulation of the queueing system: The
+assigned parameters are already set but are commented to easily modify them if it is
+necessary, we only need to set the value of b by setting the index in Line 101 and
+run the code. It will take a while but this will show the mean time in the system,
+mean time in the queue, average system occupation and average queue occupation with
+their corresponding standard deviation. Also, plots are generate to represent the
+evolution of LT along the time.
